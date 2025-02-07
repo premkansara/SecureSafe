@@ -6,7 +6,7 @@ on:
       - '**'
   pull_request:
     branches:
-      - '**'
+      - '**'  # Runs on PRs from ALL branches
 
 jobs:
   build:
@@ -28,7 +28,7 @@ jobs:
           pip install black flake8 pytest pytest-cov
 
       - name: Check Code Formatting with Black
-        run: python -m black --check $(git ls-files '*.py')
+        run: black --check $(git ls-files '*.py')
 
       - name: Lint with Flake8
         run: flake8 --ignore=E501,W503 .
