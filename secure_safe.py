@@ -4,6 +4,7 @@ import base64
 import hashlib
 from Crypto.Cipher import AES
 
+
 class SecureSafe:
     def __init__(self, master_password):
         """Initialize SecureSafe with a master password for encryption."""
