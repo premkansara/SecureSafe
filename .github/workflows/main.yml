@@ -3,12 +3,10 @@ name: SecureSafe CI/CD
 on:
   push:
     branches:
-      - dev
-      - main
+      - '**'
   pull_request:
     branches:
-      - dev
-      - main
+      - '**'
 
 jobs:
   build:
