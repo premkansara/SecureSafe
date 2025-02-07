@@ -3,7 +3,7 @@ import json
 import base64
 import hashlib
 from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
+
 
 class SecureSafe:
     def __init__(self, master_password):
@@ -68,6 +68,7 @@ class SecureSafe:
         else:
             print(f"⚠️ No password found for {account} to delete.")
 
+
 # CLI Interface
 def main():
     master_password = input("🔑 Enter Master Password: ")
@@ -102,6 +103,7 @@ def main():
 
         else:
             print("⚠️ Invalid choice, please try again.")
+
 
 if __name__ == "__main__":
     main()
