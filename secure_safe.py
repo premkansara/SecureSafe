@@ -1,109 +1,158 @@
 import os
 import json
 import base64
-import hashlib
+import random
+import string
 from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from getpass import getpass
 
 
 class SecureSafe:
     def __init__(self, master_password):
-        """Initialize SecureSafe with a master password for encryption."""
-        self.master_key = self._derive_key(master_password)
-        self.data_file = "passwords.json"
-        self.passwords = self._load_passwords()
+        self.file = "passwords.json"
+        self.key = self.derive_key(master_password)
+        self.passwords = self.load_passwords()
 
-    def _derive_key(self, password):
-        """Derives a 32-byte key from the master password using SHA-256."""
-        return hashlib.sha256(password.encode()).digest()
+    def derive_key(self, password):
+        """Derives a 16-byte AES key from the master password."""
+        return base64.urlsafe_b64encode(password.ljust(16).encode()[:16])
 
-    def _encrypt(self, plaintext):
-        """Encrypts a plaintext password using AES-GCM."""
-        cipher = AES.new(self.master_key, AES.MODE_GCM)
-        ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode())
-        return base64.b64encode(cipher.nonce + tag + ciphertext).decode()
+    def encrypt(self, plaintext):
+        """Encrypts a given plaintext using AES encryption."""
+        cipher = AES.new(self.key, AES.MODE_CBC)
+        encrypted_data = cipher.encrypt(pad(plaintext.encode(), AES.block_size))
+        return base64.b64encode(cipher.iv + encrypted_data).decode()
 
-    def _decrypt(self, encrypted_data):
-        """Decrypts an AES-GCM encrypted password."""
-        data = base64.b64decode(encrypted_data)
-        nonce, tag, ciphertext = data[:16], data[16:32], data[32:]
-        cipher = AES.new(self.master_key, AES.MODE_GCM, nonce=nonce)
-        return cipher.decrypt_and_verify(ciphertext, tag).decode()
+    def decrypt(self, encrypted_text):
+        """Decrypts a given ciphertext using AES encryption."""
+        encrypted_bytes = base64.b64decode(encrypted_text)
+        iv = encrypted_bytes[: AES.block_size]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv)
+        return unpad(
+            cipher.decrypt(encrypted_bytes[AES.block_size :]), AES.block_size
+        ).decode()
 
-    def _load_passwords(self):
-        """Loads stored passwords from the JSON file."""
-        if os.path.exists(self.data_file):
-            with open(self.data_file, "r") as file:
-                return json.load(file)
+    def load_passwords(self):
+        """Loads passwords from the JSON file and ensures they are stored as lists."""
+        if os.path.exists(self.file):
+            with open(self.file, "r") as f:
+                try:
+                    data = json.load(f)
+                    # Ensure that each website entry is stored as a list
+                    for website, entries in data.items():
+                        decrypted_entries = json.loads(self.decrypt(entries))
+                        if isinstance(
+                            decrypted_entries, dict
+                        ):  # If a single entry exists, convert to list
+                            decrypted_entries = [decrypted_entries]
+                        data[website] = decrypted_entries
+                    return data
+                except Exception:
+                    return {}
         return {}
 
-    def _save_passwords(self):
-        """Saves encrypted passwords to the JSON file."""
-        with open(self.data_file, "w") as file:
-            json.dump(self.passwords, file, indent=4)
+    def save_passwords(self):
+        """Encrypts and saves passwords, ensuring list format is maintained."""
+        encrypted_data = {
+            k: self.encrypt(json.dumps(v)) for k, v in self.passwords.items()
+        }
+        with open(self.file, "w") as f:
+            json.dump(encrypted_data, f)
 
-    def store_password(self, account, username, password):
-        """Encrypts and stores a password for an account."""
-        encrypted_password = self._encrypt(password)
-        self.passwords[account] = {"username": username, "password": encrypted_password}
-        self._save_passwords()
-        print(f"🔐 Password for {account} stored securely!")
+    def store_password(self, website, username, password):
+        """Ensures passwords are stored as a list per website."""
+        if website not in self.passwords or not isinstance(
+            self.passwords[website], list
+        ):
+            self.passwords[website] = (
+                []
+            )  # Initialize as list if it’s missing or corrupted
 
-    def retrieve_password(self, account):
-        """Retrieves and decrypts a stored password."""
-        if account in self.passwords:
-            encrypted_data = self.passwords[account]["password"]
-            decrypted_password = self._decrypt(encrypted_data)
-            print(f"🔓 Retrieved password for {account}: {decrypted_password}")
-            return decrypted_password
-        else:
-            print(f"⚠️ No password found for {account}.")
-            return None
+        self.passwords[website].append({"username": username, "password": password})
+        self.save_passwords()
 
-    def delete_password(self, account):
-        """Deletes a stored password securely."""
-        if account in self.passwords:
-            del self.passwords[account]
-            self._save_passwords()
-            print(f"🗑️ Password for {account} deleted successfully!")
-        else:
-            print(f"⚠️ No password found for {account} to delete.")
+    def retrieve_password(self, website):
+        """Retrieves all stored passwords for a website."""
+        passwords = self.passwords.get(website, [])
+
+        # Ensure it's a list (convert single string entries)
+        if isinstance(passwords, str):
+            passwords = [{"username": "default", "password": passwords}]
+
+        return passwords
+
+    def delete_password(self, website, username, password):
+        """Deletes a specific password entry for a website while keeping others."""
+        if website in self.passwords:
+            # Filter out only the selected password, keeping others
+            self.passwords[website] = [
+                entry
+                for entry in self.passwords[website]
+                if not (entry["username"] == username and entry["password"] == password)
+            ]
+
+            # If no passwords remain for this website, remove the website entry
+            if not self.passwords[website]:
+                del self.passwords[website]
+
+            self.save_passwords()
+
+    def generate_password(self, length=12, use_symbols=True, use_numbers=True):
+        """Generates a strong random password."""
+        characters = string.ascii_letters
+        if use_symbols:
+            characters += string.punctuation
+        if use_numbers:
+            characters += string.digits
+        return "".join(random.choice(characters) for _ in range(length))
 
 
-# CLI Interface
-def main():
-    master_password = input("🔑 Enter Master Password: ")
+def main_cli():
+    """CLI for SecureSafe"""
+    print("Welcome to SecureSafe v2!")
+    master_password = getpass("Enter your master password: ")
     safe = SecureSafe(master_password)
 
     while True:
-        print("\n📌 SecureSafe Password Manager 📌")
-        print("1️⃣ Store a Password")
-        print("2️⃣ Retrieve a Password")
-        print("3️⃣ Delete a Password")
-        print("4️⃣ Exit")
-
-        choice = input("👉 Choose an option: ")
+        print("\nOptions:")
+        print("1. Store Password")
+        print("2. Retrieve Password")
+        print("3. Delete Password")
+        print("4. Generate Password")
+        print("5. Exit")
+        choice = input("Choose an option: ")
 
         if choice == "1":
-            account = input("Enter account/site name: ")
-            username = input("Enter username: ")
+            website = input("Enter website: ")
             password = input("Enter password: ")
-            safe.store_password(account, username, password)
+            safe.store_password(website, password)
+            print("Password stored securely!")
 
         elif choice == "2":
-            account = input("Enter account/site name: ")
-            safe.retrieve_password(account)
+            website = input("Enter website: ")
+            password = safe.retrieve_password(website)
+            if password:
+                print(f"Password for {website}: {password}")
+            else:
+                print("No password found.")
 
         elif choice == "3":
-            account = input("Enter account/site name: ")
-            safe.delete_password(account)
+            website = input("Enter website to delete: ")
+            safe.delete_password(website)
+            print("Password deleted!")
 
         elif choice == "4":
-            print("🔒 Exiting SecureSafe. Stay secure!")
+            length = int(input("Enter password length: "))
+            password = safe.generate_password(length)
+            print(f"Generated Password: {password}")
+
+        elif choice == "5":
             break
 
         else:
-            print("⚠️ Invalid choice, please try again.")
+            print("Invalid option, try again.")
 
 
 if __name__ == "__main__":
-    main()
+    main_cli()

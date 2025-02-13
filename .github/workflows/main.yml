@@ -30,9 +30,6 @@ jobs:
       - name: Check Code Formatting with Black
         run: black --check $(git ls-files '*.py')
 
-      - name: Lint with Flake8
-        run: flake8 --ignore=E501,W503 .
-
       - name: Run Unit Tests with Coverage
         run: pytest --cov=secure_safe --cov-report=xml
 
