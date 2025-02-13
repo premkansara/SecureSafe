@@ -30,7 +30,7 @@ class SecureSafe:
         iv = encrypted_bytes[: AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return unpad(
-            cipher.decrypt(encrypted_bytes[AES.block_size :]), AES.block_size
+            cipher.decrypt(encrypted_bytes[AES.block_size:]), AES.block_size
         ).decode()
 
     def load_passwords(self):
