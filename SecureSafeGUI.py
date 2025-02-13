@@ -42,9 +42,15 @@ class SecureSafeGUI:
         self.password_entry.pack()
 
         tk.Button(self.root, text="Store Password", command=self.store_password).pack()
-        tk.Button(self.root, text="Retrieve Password", command=self.retrieve_password).pack()
-        tk.Button(self.root, text="Generate Password", command=self.generate_password).pack()
-        tk.Button(self.root, text="Delete Password", command=self.delete_password).pack()  # New delete button
+        tk.Button(
+            self.root, text="Retrieve Password", command=self.retrieve_password
+        ).pack()
+        tk.Button(
+            self.root, text="Generate Password", command=self.generate_password
+        ).pack()
+        tk.Button(
+            self.root, text="Delete Password", command=self.delete_password
+        ).pack()  # New delete button
 
     def store_password(self):
         website = self.website_entry.get()
@@ -52,7 +58,9 @@ class SecureSafeGUI:
         password = self.password_entry.get()
 
         if not website or not username or not password:
-            messagebox.showerror("Error", "Website, Username, and Password are required.")
+            messagebox.showerror(
+                "Error", "Website, Username, and Password are required."
+            )
             return
 
         self.safe.store_password(website, username, password)
@@ -74,29 +82,43 @@ class SecureSafeGUI:
             return
 
         # Filter passwords for the entered username
-        filtered_passwords = [entry for entry in stored_passwords if entry["username"] == username]
+        filtered_passwords = [
+            entry for entry in stored_passwords if entry["username"] == username
+        ]
 
         if not filtered_passwords:
-            messagebox.showerror("Error", f"No passwords found for username: {username}")
+            messagebox.showerror(
+                "Error", f"No passwords found for username: {username}"
+            )
             return
 
         if len(filtered_passwords) > 1:
             password_list = "\n".join(
-                [f"{idx + 1}. {entry['password']}" for idx, entry in enumerate(filtered_passwords)])
+                [
+                    f"{idx + 1}. {entry['password']}"
+                    for idx, entry in enumerate(filtered_passwords)
+                ]
+            )
             choice = simpledialog.askinteger(
                 "Select Password",
-                f"Multiple passwords found for {username}:\n{password_list}\n\nEnter the number to delete:"
+                f"Multiple passwords found for {username}:\n{password_list}\n\nEnter the number to delete:",
             )
 
             if choice and 1 <= choice <= len(filtered_passwords):
                 selected_entry = filtered_passwords[choice - 1]
                 self.safe.delete_password(website, username, selected_entry["password"])
-                messagebox.showinfo("Success", f"Deleted password for {username} on {website}!")
+                messagebox.showinfo(
+                    "Success", f"Deleted password for {username} on {website}!"
+                )
             else:
                 messagebox.showerror("Error", "Invalid selection.")
         else:
-            self.safe.delete_password(website, username, filtered_passwords[0]["password"])
-            messagebox.showinfo("Success", f"Password deleted for {username} on {website}!")
+            self.safe.delete_password(
+                website, username, filtered_passwords[0]["password"]
+            )
+            messagebox.showinfo(
+                "Success", f"Password deleted for {username} on {website}!"
+            )
 
     def retrieve_password(self):
         """Retrieves passwords for a website and a specific username."""
@@ -114,18 +136,29 @@ class SecureSafeGUI:
             return
 
         # Filter by username
-        filtered_passwords = [entry["password"] for entry in stored_passwords if entry["username"] == username]
+        filtered_passwords = [
+            entry["password"]
+            for entry in stored_passwords
+            if entry["username"] == username
+        ]
 
         if not filtered_passwords:
-            messagebox.showerror("Error", f"No passwords found for username: {username}")
+            messagebox.showerror(
+                "Error", f"No passwords found for username: {username}"
+            )
             return
 
         # If multiple passwords exist for the same username
         if len(filtered_passwords) > 1:
-            password_list = "\n".join([f"{idx + 1}. {password}" for idx, password in enumerate(filtered_passwords)])
+            password_list = "\n".join(
+                [
+                    f"{idx + 1}. {password}"
+                    for idx, password in enumerate(filtered_passwords)
+                ]
+            )
             choice = simpledialog.askinteger(
                 "Select Password",
-                f"Multiple passwords found:\n{password_list}\n\nEnter the number to copy:"
+                f"Multiple passwords found:\n{password_list}\n\nEnter the number to copy:",
             )
 
             if choice and 1 <= choice <= len(filtered_passwords):
