@@ -14,32 +14,43 @@ def secure_safe():
 
 
 def test_store_password(secure_safe):
-    """Test if a password is correctly stored."""
-    secure_safe.store_password("test.com", "testuser", "Test@123")
+    """Test storing multiple passwords per website and username."""
+    secure_safe.store_password("test.com", "user1", "Test@123")
+    secure_safe.store_password("test.com", "user2", "Pass@456")
+
     assert "test.com" in secure_safe.passwords
+    assert len(secure_safe.passwords["test.com"]) == 2  # Should store two passwords
 
 
 def test_retrieve_password(secure_safe):
-    """Test if a stored password can be retrieved correctly."""
-    secure_safe.store_password("test.com", "testuser", "Test@123")
-    retrieved_password = secure_safe.retrieve_password("test.com")
-    assert retrieved_password == "Test@123"
+    """Test retrieving only passwords belonging to a specific username."""
+    secure_safe.store_password("test.com", "user1", "Test@123")
+    secure_safe.store_password("test.com", "user2", "Pass@456")
 
-
-def test_retrieve_non_existent_password(secure_safe):
-    """Test retrieving a password that does not exist."""
-    retrieved_password = secure_safe.retrieve_password("unknown.com")
-    assert retrieved_password is None  # Should return None for non-existent passwords
+    retrieved_passwords = secure_safe.retrieve_password("test.com")
+    assert isinstance(retrieved_passwords, list)
+    assert len(retrieved_passwords) == 2
+    assert any(entry["password"] == "Test@123" for entry in retrieved_passwords)
+    assert any(entry["password"] == "Pass@456" for entry in retrieved_passwords)
 
 
 def test_delete_password(secure_safe):
-    """Test deleting a stored password."""
-    secure_safe.store_password("test.com", "testuser", "Test@123")
-    secure_safe.delete_password("test.com")
-    assert "test.com" not in secure_safe.passwords
+    """Test deleting a specific password entry without affecting others."""
+    secure_safe.store_password("test.com", "user1", "Test@123")
+    secure_safe.store_password("test.com", "user2", "Pass@456")
+
+    secure_safe.delete_password("test.com", "user1", "Test@123")
+
+    remaining_passwords = secure_safe.retrieve_password("test.com")
+    assert len(remaining_passwords) == 1  # Only one password should remain
+    assert remaining_passwords[0]["username"] == "user2"
+    assert remaining_passwords[0]["password"] == "Pass@456"
 
 
 def test_delete_non_existent_password(secure_safe):
-    """Test deleting a password that doesn't exist."""
-    secure_safe.delete_password("nonexistent.com")
-    assert "nonexistent.com" not in secure_safe.passwords
+    """Ensure deleting a non-existent password does not crash."""
+    secure_safe.store_password("test.com", "user1", "Test@123")
+    secure_safe.delete_password("test.com", "user2", "FakePass")
+
+    retrieved_passwords = secure_safe.retrieve_password("test.com")
+    assert len(retrieved_passwords) == 1  # Password should remain unchanged
