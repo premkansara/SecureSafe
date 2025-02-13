@@ -3,7 +3,6 @@ import json
 import base64
 import random
 import string
-from tkinter import Tk, Label, Entry, Button, messagebox
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from getpass import getpass
