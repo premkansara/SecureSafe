@@ -8,6 +8,7 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from getpass import getpass
 
+
 class SecureSafe:
     def __init__(self, master_password):
         self.file = "passwords.json"
@@ -27,9 +28,11 @@ class SecureSafe:
     def decrypt(self, encrypted_text):
         """Decrypts a given ciphertext using AES encryption."""
         encrypted_bytes = base64.b64decode(encrypted_text)
-        iv = encrypted_bytes[:AES.block_size]
+        iv = encrypted_bytes[: AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return unpad(cipher.decrypt(encrypted_bytes[AES.block_size:]), AES.block_size).decode()
+        return unpad(
+            cipher.decrypt(encrypted_bytes[AES.block_size :]), AES.block_size
+        ).decode()
 
     def load_passwords(self):
         """Loads passwords from the JSON file and ensures they are stored as lists."""
@@ -40,7 +43,9 @@ class SecureSafe:
                     # Ensure that each website entry is stored as a list
                     for website, entries in data.items():
                         decrypted_entries = json.loads(self.decrypt(entries))
-                        if isinstance(decrypted_entries, dict):  # If a single entry exists, convert to list
+                        if isinstance(
+                            decrypted_entries, dict
+                        ):  # If a single entry exists, convert to list
                             decrypted_entries = [decrypted_entries]
                         data[website] = decrypted_entries
                     return data
@@ -50,14 +55,20 @@ class SecureSafe:
 
     def save_passwords(self):
         """Encrypts and saves passwords, ensuring list format is maintained."""
-        encrypted_data = {k: self.encrypt(json.dumps(v)) for k, v in self.passwords.items()}
+        encrypted_data = {
+            k: self.encrypt(json.dumps(v)) for k, v in self.passwords.items()
+        }
         with open(self.file, "w") as f:
             json.dump(encrypted_data, f)
 
     def store_password(self, website, username, password):
         """Ensures passwords are stored as a list per website."""
-        if website not in self.passwords or not isinstance(self.passwords[website], list):
-            self.passwords[website] = []  # Initialize as list if it’s missing or corrupted
+        if website not in self.passwords or not isinstance(
+            self.passwords[website], list
+        ):
+            self.passwords[website] = (
+                []
+            )  # Initialize as list if it’s missing or corrupted
 
         self.passwords[website].append({"username": username, "password": password})
         self.save_passwords()
@@ -77,7 +88,8 @@ class SecureSafe:
         if website in self.passwords:
             # Filter out only the selected password, keeping others
             self.passwords[website] = [
-                entry for entry in self.passwords[website]
+                entry
+                for entry in self.passwords[website]
                 if not (entry["username"] == username and entry["password"] == password)
             ]
 
@@ -94,7 +106,8 @@ class SecureSafe:
             characters += string.punctuation
         if use_numbers:
             characters += string.digits
-        return ''.join(random.choice(characters) for _ in range(length))
+        return "".join(random.choice(characters) for _ in range(length))
+
 
 def main_cli():
     """CLI for SecureSafe"""
@@ -140,6 +153,7 @@ def main_cli():
 
         else:
             print("Invalid option, try again.")
+
 
 if __name__ == "__main__":
     main_cli()

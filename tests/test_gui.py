@@ -11,6 +11,7 @@ if sys.platform != "win32":
 # Import your SecureSafeGUI class.
 from SecureSafeGUI import SecureSafeGUI  # Make sure the file is named SecureSafeGUI.py
 
+
 class TestSecureSafeGUI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -50,7 +51,9 @@ class TestSecureSafeGUI(unittest.TestCase):
         # Ensure SecureSafe is instantiated with the correct master password.
         mock_secure_safe.assert_called_with(test_master)
         # Check that a label with "Website:" is now present.
-        labels = [child for child in self.root.winfo_children() if isinstance(child, tk.Label)]
+        labels = [
+            child for child in self.root.winfo_children() if isinstance(child, tk.Label)
+        ]
         texts = [lbl.cget("text") for lbl in labels]
         self.assertIn("Website:", texts)
 
@@ -96,12 +99,16 @@ class TestSecureSafeGUI(unittest.TestCase):
 
         self.gui.store_password()
 
-        mock_showerror.assert_called_with("Error", "Website, Username, and Password are required.")
+        mock_showerror.assert_called_with(
+            "Error", "Website, Username, and Password are required."
+        )
 
     @patch("pyperclip.copy")
     @patch("tkinter.messagebox.showinfo")
     @patch("tkinter.messagebox.showerror")
-    def test_retrieve_password_single(self, mock_showerror, mock_showinfo, mock_pyperclip_copy):
+    def test_retrieve_password_single(
+        self, mock_showerror, mock_showinfo, mock_pyperclip_copy
+    ):
         """Test that when a single matching password exists,
         it is copied to the clipboard and a success message is shown."""
         self.gui.safe = MagicMock()
@@ -124,7 +131,9 @@ class TestSecureSafeGUI(unittest.TestCase):
     @patch("pyperclip.copy")
     @patch("tkinter.messagebox.showinfo")
     @patch("tkinter.messagebox.showerror")
-    def test_retrieve_password_multiple_valid(self, mock_showerror, mock_showinfo, mock_pyperclip_copy, mock_askinteger):
+    def test_retrieve_password_multiple_valid(
+        self, mock_showerror, mock_showinfo, mock_pyperclip_copy, mock_askinteger
+    ):
         """Test that when multiple matching passwords exist and a valid selection is made,
         the selected password is copied to the clipboard."""
         self.gui.safe = MagicMock()
@@ -180,7 +189,9 @@ class TestSecureSafeGUI(unittest.TestCase):
 
         self.gui.retrieve_password()
 
-        mock_showerror.assert_called_with("Error", "Please enter both website and username.")
+        mock_showerror.assert_called_with(
+            "Error", "Please enter both website and username."
+        )
 
     @patch("tkinter.messagebox.showinfo")
     @patch("tkinter.messagebox.showerror")
@@ -197,14 +208,20 @@ class TestSecureSafeGUI(unittest.TestCase):
 
         self.gui.delete_password()
 
-        self.gui.safe.delete_password.assert_called_with("example.com", "user", "pass123")
-        mock_showinfo.assert_called_with("Success", "Password deleted for user on example.com!")
+        self.gui.safe.delete_password.assert_called_with(
+            "example.com", "user", "pass123"
+        )
+        mock_showinfo.assert_called_with(
+            "Success", "Password deleted for user on example.com!"
+        )
         mock_showerror.assert_not_called()
 
     @patch("tkinter.simpledialog.askinteger")
     @patch("tkinter.messagebox.showinfo")
     @patch("tkinter.messagebox.showerror")
-    def test_delete_password_multiple_valid(self, mock_showerror, mock_showinfo, mock_askinteger):
+    def test_delete_password_multiple_valid(
+        self, mock_showerror, mock_showinfo, mock_askinteger
+    ):
         """Test that when multiple matching passwords exist and a valid selection is made,
         the selected password is deleted."""
         self.gui.safe = MagicMock()
@@ -224,7 +241,9 @@ class TestSecureSafeGUI(unittest.TestCase):
         self.gui.delete_password()
 
         self.gui.safe.delete_password.assert_called_with("example.com", "user", "pass1")
-        mock_showinfo.assert_called_with("Success", "Deleted password for user on example.com!")
+        mock_showinfo.assert_called_with(
+            "Success", "Deleted password for user on example.com!"
+        )
         mock_showerror.assert_not_called()
 
     @patch("tkinter.simpledialog.askinteger")
@@ -262,7 +281,9 @@ class TestSecureSafeGUI(unittest.TestCase):
 
         self.gui.delete_password()
 
-        mock_showerror.assert_called_with("Error", "Please enter both website and username.")
+        mock_showerror.assert_called_with(
+            "Error", "Please enter both website and username."
+        )
 
     def test_generate_password(self):
         """Test that generate_password updates the password_entry with the generated password."""
